@@ -11,7 +11,7 @@ class ContextEntry(Base):
 
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
 
-    project = relationship(
-        "Project",
-        back_populates="context_entries"
-    )
+#    project = relationship(
+ #       "Project",
+ #       back_populates="context_entries"
+#   )

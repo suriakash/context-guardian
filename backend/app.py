@@ -1,3 +1,5 @@
+import os
+from openai import OpenAI
 from database import Base, engine, SessionLocal
 from models.project import Project
 from models.meeting import Meeting
@@ -6,6 +8,8 @@ from flask_cors import CORS
 import datetime, pytz
 
 from functools import wraps
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def token_required(f):
     @wraps(f)
@@ -162,6 +166,7 @@ def list_project_meetings(project_id):
     }), 200
 
 # ====== AI Summary ======
+
 @app.route("/api/projects/<project_id>/ai-summary", methods=["GET"])
 @token_required
 def project_ai_summary(project_id):
@@ -179,26 +184,41 @@ def project_ai_summary(project_id):
             "error": "No meetings found for this project"
         }), 404
 
-    # Aggregate notes
-    combined_notes = "\n".join([
+    combined_notes = "\n".join(
         m.notes for m in meetings if m.notes
-    ])
+    )
 
-    # Mock AI summary (replace later with real LLM)
-    summary = f"""
-Project Summary:
-This project has {len(meetings)} meetings so far.
+    prompt = (
+        "You are an AI assistant helping summarize project context.\n\n"
+        "Below are meeting notes for a project.\n"
+        "Summarize the current state, key decisions, and risks concisely.\n\n"
+        f"Meeting Notes:\n{combined_notes}"
+    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You summarize project context for humans."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3
+        )
 
-Key discussion points:
-{combined_notes}
+        summary = response.choices[0].message.content.strip()
+        ai_mode = "openai"
 
-Overall status:
-Project is active and progressing based on recorded discussions.
-""".strip()
+    except Exception as e:
+        summary = (
+            "AI summary is temporarily unavailable.\n\n"
+            "Fallback summary based on meeting notes:\n\n"
+            f"{combined_notes}"
+        )
+        ai_mode = "fallback"
 
     return jsonify({
         "success": True,
         "project_id": project_id,
+        "ai_mode": ai_mode,
         "summary": summary
     }), 200
 

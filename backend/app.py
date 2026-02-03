@@ -1,6 +1,6 @@
 from database import Base, engine, SessionLocal
 from models.project import Project
-
+from models.meeting import Meeting
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import datetime, pytz
@@ -98,6 +98,69 @@ def create_project():
 @app.route("/api/debug/routes", methods=["GET"])
 def routes():
     return {"routes": [str(r) for r in app.url_map.iter_rules()]}
+
+@app.route("/api/projects/<project_id>/meetings", methods=["POST"])
+@token_required
+def create_meeting(project_id):
+    data = request.json or {}
+
+    if not data.get("title"):
+        return jsonify({
+            "success": False,
+            "error": "Meeting title required"
+        }), 400
+
+    db = SessionLocal()
+
+    meeting = Meeting(
+        id=f"meeting_{int(datetime.datetime.utcnow().timestamp())}",
+        title=data["title"],
+        project_id=project_id,
+        notes=data.get("notes", "")
+    )
+
+    db.add(meeting)
+    db.commit()
+    db.refresh(meeting)
+    db.close()
+
+    return jsonify({
+        "success": True,
+        "meeting": {
+            "id": meeting.id,
+            "title": meeting.title,
+            "project_id": meeting.project_id,
+            "notes": meeting.notes,
+            "created_at": meeting.created_at.isoformat()
+        }
+    }), 201
+
+@app.route("/api/projects/<project_id>/meetings", methods=["GET"])
+@token_required
+def list_project_meetings(project_id):
+    db = SessionLocal()
+
+    meetings = db.query(Meeting).filter(
+        Meeting.project_id == project_id
+    ).all()
+
+    db.close()
+
+    return jsonify({
+        "success": True,
+        "count": len(meetings),
+        "meetings": [
+            {
+                "id": m.id,
+                "title": m.title,
+                "project_id": m.project_id,
+                "notes": m.notes,
+                "created_at": m.created_at.isoformat()
+            }
+            for m in meetings
+        ]
+    }), 200
+
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)

@@ -161,6 +161,47 @@ def list_project_meetings(project_id):
         ]
     }), 200
 
+# ====== AI Summary ======
+@app.route("/api/projects/<project_id>/ai-summary", methods=["GET"])
+@token_required
+def project_ai_summary(project_id):
+    db = SessionLocal()
+
+    meetings = db.query(Meeting).filter(
+        Meeting.project_id == project_id
+    ).all()
+
+    db.close()
+
+    if not meetings:
+        return jsonify({
+            "success": False,
+            "error": "No meetings found for this project"
+        }), 404
+
+    # Aggregate notes
+    combined_notes = "\n".join([
+        m.notes for m in meetings if m.notes
+    ])
+
+    # Mock AI summary (replace later with real LLM)
+    summary = f"""
+Project Summary:
+This project has {len(meetings)} meetings so far.
+
+Key discussion points:
+{combined_notes}
+
+Overall status:
+Project is active and progressing based on recorded discussions.
+""".strip()
+
+    return jsonify({
+        "success": True,
+        "project_id": project_id,
+        "summary": summary
+    }), 200
+
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)

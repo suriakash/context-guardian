@@ -1,3 +1,5 @@
+import Tooltip from "../ui/Tooltip";
+
 // components/dashboard/KPICards.tsx
 const stats = [
   { label: "Projects", value: 6 },
@@ -14,10 +16,26 @@ export default function KPICards() {
           key={s.label}
           className="bg-white p-4 rounded-lg border"
         >
-          <div className="text-sm text-gray-500">{s.label}</div>
-          <div className="text-2xl font-semibold">{s.value}</div>
+          <div className="text-2xl font-semibold tracking-tight text-gray-900">
+            {s.value}
+          </div>
+
+          <div className="text-xs text-gray-400 uppercase tracking-wide flex items-center">
+             {s.label}
+             <Tooltip text={getKpiHelp(s.label)} />
+          </div>
         </div>
       ))}
     </div>
   );
+}
+
+function getKpiHelp(label) {
+  const map = {
+    Projects: "Number of active initiatives being tracked",
+    "Meetings Processed": "Total meetings analyzed by AI",
+    "AI Summaries": "Structured summaries generated",
+    "Est. Cost Saved": "Estimated time & cost reduction",
+  };
+  return map[label] || "";
 }

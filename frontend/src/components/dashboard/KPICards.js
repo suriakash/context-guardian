@@ -3,7 +3,7 @@ import Tooltip from "../ui/Tooltip";
 // components/dashboard/KPICards.tsx
 const stats = [
   { label: "Projects", value: 6 },
-  { label: "Meetings Processed", value: 42 },
+  { label: "Meetings Processed", value: 62 },
   { label: "AI Summaries", value: 89 },
   { label: "Est. Cost Saved", value: "$1,240" },
 ];
